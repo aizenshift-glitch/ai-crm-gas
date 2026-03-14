@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 760px;
+      margin: 30px auto;
+      padding: 0 16px;
+      background: #f5f5f5;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      margin-bottom: 20px;
+    }
+
+    input, button, textarea {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 10px;
+      margin-top: 8px;
+      font-size: 14px;
+    }
+
+    button {
+      background: #1a73e8;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    #chatBox {
+      background: #fff;
+      border-radius: 12px;
+      padding: 16px;
+      min-height: 300px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      overflow-y: auto;
+    }
+
+    .msg {
+      margin-bottom: 12px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      max-width: 80%;
+      white-space: pre-wrap;
+    }
+
+    .user {
+      background: #dbeafe;
+      margin-left: auto;
+    }
+
+    .assistant {
+      background: #f3f4f6;
+      margin-right: auto;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="card">
+    <h2>AI CRM Demo Chat</h2>
+    <input type="text" id="name" placeholder="Your name">
+    <input type="email" id="email" placeholder="Your email">
+    <button id="startBtn">Start Chat</button>
+  </div>
+
+  <div id="chatBox"></div>
+
+  <div class="card">
+    <textarea id="message" placeholder="Type your message here"></textarea>
+    <button id="sendBtn">Send</button>
+  </div>
+
+  <script>
+    let conversationId = null;
+
+    const nameInput = document.getElementById('name');
+    const emailInput = document.getElementById('email');
+    const messageInput = document.getElementById('message');
+    const chatBox = document.getElementById('chatBox');
+
+    document.getElementById('startBtn').addEventListener('click', () => {
+      google.script.run
+        .withSuccessHandler(res => {
+          conversationId = res.conversationId;
+          appendMessage('assistant', res.reply);
+        })
+        .withFailureHandler(err => {
+          alert(err.message);
+        })
+        .startConversation({
+          name: nameInput.value,
+          email: emailInput.value
+        });
+    });
+
+    document.getElementById('sendBtn').addEventListener('click', () => {
+      if (!conversationId) {
+        alert('Start the chat first.');
+        return;
+      }
+
+      const text = messageInput.value.trim();
+      if (!text) return;
+
+      appendMessage('user', text);
+      messageInput.value = '';
+
+      google.script.run
+        .withSuccessHandler(res => {
+          appendMessage('assistant', res.reply);
+        })
+        .withFailureHandler(err => {
+          alert(err.message);
+        })
+        .sendMessage({
+          conversationId,
+          name: nameInput.value,
+          email: emailInput.value,
+          message: text
+        });
+    });
+
+    function appendMessage(role, text) {
+      const div = document.createElement('div');
+      div.className = 'msg ' + role;
+      div.textContent = text;
+      chatBox.appendChild(div);
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+  </script>
+
+</body>
+</html>
